@@ -81,7 +81,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '6443'
           ToPort: '6443'
-          CidrIp: !Ref PrivateSubnetCidr
+          CidrIp: 10.0.2.0/24
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
@@ -147,12 +147,11 @@ Resources:
       Tags:
         - Key: Name
           Value: Masterk3sInstance
-          key: Node-Type
-          value: Master
+        - Key: Node-Type
+          Value: Master
       MetadataOptions:
         HttpTokens: required 
         HttpPutResponseHopLimit: 1
-        InstanceMetadataTags: enabled
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -183,13 +182,9 @@ Resources:
         - !Ref KSInfraSecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
-      Tags:
-        - Key: Name
-          Value: Nodek3sInstance
       MetadataOptions:
         HttpTokens: required 
         HttpPutResponseHopLimit: 1
-        InstanceMetadataTags: enabled
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -204,7 +199,7 @@ Resources:
               groups: sudo
               home: /home/trendmicro
               shell: /bin/bash
-              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+              passwd: ${DefaultPassword}
           runcmd:
             - |
               #!/bin/bash
@@ -220,13 +215,9 @@ Resources:
         - !Ref KSInfraSecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
-      Tags:
-        - Key: Name
-          Value: Nodek3sInstance
       MetadataOptions:
         HttpTokens: required 
         HttpPutResponseHopLimit: 1
-        InstanceMetadataTags: enabled
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -241,7 +232,7 @@ Resources:
               groups: sudo
               home: /home/trendmicro
               shell: /bin/bash
-              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+              passwd: ${DefaultPassword}
           runcmd:
             - |
               #!/bin/bash
