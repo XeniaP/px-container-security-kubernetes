@@ -72,7 +72,7 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet
       RouteTableId: !Ref PrivateRouteTable
-  KS_Infra_SecurityGroup:
+  KSInfraSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
       GroupDescription: Security Access for Kubernetes Infra
@@ -141,7 +141,7 @@ Resources:
       InstanceType: t2.large
       ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
       SecurityGroupIds:
-        - !Ref KS_Infra_SecurityGroup
+        - !Ref KSInfraSecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
       Tags:
@@ -180,7 +180,7 @@ Resources:
       InstanceType: t2.large
       ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
       SecurityGroupIds:
-        - !Ref KS_Infra_SecurityGroup
+        - !Ref KSInfraSecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
       Tags:
@@ -217,7 +217,7 @@ Resources:
       InstanceType: t2.large
       ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
       SecurityGroupIds:
-        - !Ref KS_Infra_SecurityGroup
+        - !Ref KSInfraSecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
       Tags:
