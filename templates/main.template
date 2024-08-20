@@ -16,6 +16,15 @@ Resources:
       Tags:
         - Key: Name
           Value: VPCCSDemo
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt EIPForNAT.AllocationId
+      SubnetId: !Ref PublicSubnet
+  EIPForNAT:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
@@ -64,9 +73,12 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPCCSDemo
-      Tags:
-        - Key: Name
-          Value: PrivateRouteTable
+  PrivateSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
   PrivateSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -82,6 +94,11 @@ Resources:
           FromPort: '6443'
           ToPort: '6443'
           CidrIp: 10.0.2.0/24
+      SecurityGroupEgress:
+        - IpProtocol: -1 # all
+          FromPort: -1 # all
+          ToPort: -1 # all
+          CidrIp: 0.0.0.0/0
   BastionSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
@@ -92,6 +109,11 @@ Resources:
           FromPort: '3389'
           ToPort: '3389'
           CidrIp: 0.0.0.0/0  # Reemplaza con tu IP si es necesario
+      SecurityGroupEgress:
+        - IpProtocol: -1 # all
+          FromPort: -1 # all
+          ToPort: -1 # all
+          CidrIp: 0.0.0.0/0
   PrivateInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
@@ -102,6 +124,11 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           SourceSecurityGroupId: !Ref BastionSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1 # all
+          FromPort: -1 # all
+          ToPort: -1 # all
+          CidrIp: 0.0.0.0/0
   SSMInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -119,6 +146,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
       Policies:
         - PolicyName: KubernetesInstancePolicy
           PolicyDocument:
@@ -135,116 +163,109 @@ Resources:
                   - ssm:GetParameters
                   - ssm:PutParameter
                 Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/k3s/cluster/token
+  Masterk3sLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        InstanceType: t2.large
+        ImageId: ami-04a81a99f5ec58529 # Ubuntu Noble 24.04 - Virginia
+        SecurityGroupIds:
+          - !Ref KSInfraSecurityGroup
+          - !Ref PrivateInstanceSecurityGroup
+        IamInstanceProfile:
+          Name: !Ref SSMInstanceProfile
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: Masterk3sInstance
+              - Key: Node-Type
+                Value: Master
+        MetadataOptions:
+          HttpTokens: required
+          HttpPutResponseHopLimit: 1
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp3
+              VolumeSize: 15
+        UserData:
+          Fn::Base64: !Sub |
+            #cloud-config
+            users:
+              - name: trendmicro
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                groups: sudo
+                home: /home/trendmicro
+                shell: /bin/bash
+                passwd: ${DefaultPassword}
+            runcmd:
+              - |
+                #!/bin/bash
+                aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
+                chmod +x /tmp/initial-script.sh
+                /tmp/initial-script.sh
   Masterk3sInstance:
     Type: AWS::EC2::Instance
-    Properties: 
-      InstanceType: t2.large
-      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
-      SecurityGroupIds:
-        - !Ref KSInfraSecurityGroup
-        - !Ref PrivateInstanceSecurityGroup
-      IamInstanceProfile: !Ref SSMInstanceProfile
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      LaunchTemplate:
+        LaunchTemplateId: !Ref Masterk3sLaunchTemplate
+        Version: 1
+  Nodek3sLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        InstanceType: t2.medium
+        ImageId: ami-04a81a99f5ec58529 # Ubuntu Noble 24.04 - Virginia
+        SecurityGroupIds:
+          - !Ref KSInfraSecurityGroup
+          - !Ref PrivateInstanceSecurityGroup
+        IamInstanceProfile:
+          Name: !Ref SSMInstanceProfile
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp3
+              VolumeSize: 15
+        UserData:
+          Fn::Base64: !Sub |
+            #cloud-config
+            users:
+              - name: trendmicro
+                sudo: ALL=(ALL) NOPASSWD:ALL
+                groups: sudo
+                home: /home/trendmicro
+                shell: /bin/bash
+                passwd: ${DefaultPassword}
+            runcmd:
+              - |
+                #!/bin/bash
+                aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
+                chmod +x /tmp/initial-script.sh
+                /tmp/initial-script.sh
+  Nodek3sAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnet
+      LaunchTemplate:
+        LaunchTemplateId: !Ref Nodek3sLaunchTemplate
+        Version: 1
+      MinSize: 2
+      MaxSize: 5
+      DesiredCapacity: 3
       Tags:
         - Key: Name
-          Value: Masterk3sInstance
-        - Key: Node-Type
-          Value: Master
-      MetadataOptions:
-        HttpTokens: required 
-        HttpPutResponseHopLimit: 1
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp3
-            VolumeSize: 15
-      UserData:
-        Fn::Base64: !Sub |
-          #cloud-config
-          users:
-            - name: trendmicro
-              sudo: ALL=(ALL) NOPASSWD:ALL
-              groups: sudo
-              home: /home/trendmicro
-              shell: /bin/bash
-              passwd: ${DefaultPassword}
-          runcmd:
-            - |
-              #!/bin/bash
-              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
-              chmod +x /tmp/initial-script.sh
-              /tmp/initial-script.sh
-  Nodek3sInstance1:
-    Type: AWS::EC2::Instance
-    Properties: 
-      InstanceType: t2.large
-      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
-      SecurityGroupIds:
-        - !Ref KSInfraSecurityGroup
-        - !Ref PrivateInstanceSecurityGroup
-      IamInstanceProfile: !Ref SSMInstanceProfile
-      MetadataOptions:
-        HttpTokens: required 
-        HttpPutResponseHopLimit: 1
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp3
-            VolumeSize: 15
-      UserData:
-        Fn::Base64: !Sub |
-          #cloud-config
-          users:
-            - name: trendmicro
-              sudo: ALL=(ALL) NOPASSWD:ALL
-              groups: sudo
-              home: /home/trendmicro
-              shell: /bin/bash
-              passwd: ${DefaultPassword}
-          runcmd:
-            - |
-              #!/bin/bash
-              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
-              chmod +x /tmp/initial-script.sh
-              /tmp/initial-script.sh
-  Nodek3sInstance2:
-    Type: AWS::EC2::Instance
-    Properties: 
-      InstanceType: t2.large
-      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
-      SecurityGroupIds:
-        - !Ref KSInfraSecurityGroup
-        - !Ref PrivateInstanceSecurityGroup
-      IamInstanceProfile: !Ref SSMInstanceProfile
-      MetadataOptions:
-        HttpTokens: required 
-        HttpPutResponseHopLimit: 1
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp3
-            VolumeSize: 15
-      UserData:
-        Fn::Base64: !Sub |
-          #cloud-config
-          users:
-            - name: trendmicro
-              sudo: ALL=(ALL) NOPASSWD:ALL
-              groups: sudo
-              home: /home/trendmicro
-              shell: /bin/bash
-              passwd: ${DefaultPassword}
-          runcmd:
-            - |
-              #!/bin/bash
-              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
-              chmod +x /tmp/initial-script.sh
-              /tmp/initial-script.sh
+          Value: Nodek3sInstance
+          PropagateAtLaunch: true
+  
   BastionHost:
     Type: AWS::EC2::Instance
     Properties: 
       InstanceType: t2.large
       SubnetId: !Ref PublicSubnet
-      ImageId: ami-0b2f6494ff0b07a0e  # Ubuntu AMI, cambia según la región
+      ImageId: ami-07cc1bbe145f35b58  # Windows Server 2022 - Virginia
       SecurityGroupIds:
         - !Ref BastionSecurityGroup
       UserData:

@@ -1,9 +1,12 @@
-<powershell>
-# Crear un usuario por defecto
+# Define primero las variables
 $username = "trendmicro"
 $password = ConvertTo-SecureString "trendmicro" -AsPlainText -Force
 New-LocalUser -Name $username -Password $password -FullName "trendmicro" -Description "User for trendmicro access"
 Add-LocalGroupMember -Group "Administrators" -Member $username
+
+Get-NetFirewallRule -DisplayGroup "Remote Desktop" | Where-Object {$_.Enabled -eq "True"}
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
 
 # Instalar Google Chrome
 $chromeInstaller = "$env:USERPROFILE\Downloads\chrome_installer.exe"
@@ -34,5 +37,3 @@ $chromePrefs = @{
 }
 
 $chromePrefs | ConvertTo-Json | Set-Content -Path $chromePrefsPath
-
-</powershell>
