@@ -202,6 +202,11 @@ Resources:
             runcmd:
               - |
                 #!/bin/bash
+                sudo apt update -y && sudo apt upgrade -y
+                sudo apt install -y unzip jq
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                unzip -o awscliv2.zip
+                sudo ./aws/install --update
                 aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
                 chmod +x /tmp/initial-script.sh
                 /tmp/initial-script.sh
