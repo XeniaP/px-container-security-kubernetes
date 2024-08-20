@@ -144,6 +144,85 @@ Resources:
         - !Ref KS_Infra_SecurityGroup
         - !Ref PrivateInstanceSecurityGroup
       IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: Masterk3sInstance
+          key: Node-Type
+          value: Master
+      MetadataOptions:
+        HttpTokens: required 
+        HttpPutResponseHopLimit: 1
+        InstanceMetadataTags: enabled
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 15
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-config
+          users:
+            - name: trendmicro
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              groups: sudo
+              home: /home/trendmicro
+              shell: /bin/bash
+              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+          runcmd:
+            - |
+              #!/bin/bash
+              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
+              chmod +x /tmp/initial-script.sh
+              /tmp/initial-script.sh
+  Nodek3sInstance1:
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: t2.large
+      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
+      SecurityGroupIds:
+        - !Ref KS_Infra_SecurityGroup
+        - !Ref PrivateInstanceSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: Nodek3sInstance
+      MetadataOptions:
+        HttpTokens: required 
+        HttpPutResponseHopLimit: 1
+        InstanceMetadataTags: enabled
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 15
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-config
+          users:
+            - name: trendmicro
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              groups: sudo
+              home: /home/trendmicro
+              shell: /bin/bash
+              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+          runcmd:
+            - |
+              #!/bin/bash
+              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
+              chmod +x /tmp/initial-script.sh
+              /tmp/initial-script.sh
+  Nodek3sInstance2:
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: t2.large
+      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
+      SecurityGroupIds:
+        - !Ref KS_Infra_SecurityGroup
+        - !Ref PrivateInstanceSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      Tags:
+        - Key: Name
+          Value: Nodek3sInstance
       MetadataOptions:
         HttpTokens: required 
         HttpPutResponseHopLimit: 1
@@ -174,8 +253,7 @@ Resources:
     Properties: 
       InstanceType: t2.large
       SubnetId: !Ref PublicSubnet
-      ImageId: ami-0c55b159cbfafe1f0  # Ubuntu AMI, cambia según la región
-      KeyName: !Ref KeyName
+      ImageId: ami-0b2f6494ff0b07a0e  # Ubuntu AMI, cambia según la región
       SecurityGroupIds:
         - !Ref BastionSecurityGroup
       UserData:
