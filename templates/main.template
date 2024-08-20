@@ -7,7 +7,7 @@ Parameters:
     NoEcho: true
     Default: "trendmicro"  # Valor por defecto
 Resources:
-  VPC_CS_Demo:
+  VPCCSDemo:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
@@ -15,18 +15,18 @@ Resources:
       EnableDnsHostnames: true
       Tags:
         - Key: Name
-          Value: VPC_CS_Demo
+          Value: VPCCSDemo
   PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [ 0, !GetAZs ]
   PrivateSubnet:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Select [ 0, !GetAZs ]
@@ -39,12 +39,12 @@ Resources:
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       InternetGatewayId: !Ref InternetGateway
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       Tags:
         - Key: Name
           Value: PublicRouteTable
@@ -63,7 +63,7 @@ Resources:
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       Tags:
         - Key: Name
           Value: PrivateRouteTable
@@ -76,7 +76,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties: 
       GroupDescription: Security Access for Kubernetes Infra
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '6443'
@@ -86,7 +86,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties: 
       GroupDescription: Give RDP access to bastion host
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '3389'
@@ -96,7 +96,7 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties: 
       GroupDescription: Give SSH access to private instances
-      VpcId: !Ref VPC_CS_Demo
+      VpcId: !Ref VPCCSDemo
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: '22'
