@@ -1,0 +1,26 @@
+name: Sync Script to S3
+
+on:
+  push:
+    branches:
+      - main  # Cambia esto a la rama que prefieras
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials using OIDC
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: ${{ secrets.RoleArn }}
+        aws-region: us-east-1
+    - name: Sync script to S3
+      run: |
+        aws s3 sync . s3://cloudlab-yessenia/ --delete

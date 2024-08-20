@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Px Container Security Kubernetes Demo Template
+Parameters:
+  DefaultPassword:
+    Description: Default password for trendmicro user.
+    Type: String
+    NoEcho: true
+    Default: "trendmicro"  # Valor por defecto
+Resources:
+  VPC_CS_Demo:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: VPC_CS_Demo
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC_CS_Demo
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC_CS_Demo
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Select [ 0, !GetAZs ]
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: CS_Demo_InternetGateway
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC_CS_Demo
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC_CS_Demo
+      Tags:
+        - Key: Name
+          Value: PublicRouteTable
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC_CS_Demo
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
+  KS_Infra_SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Security Access for Kubernetes Infra
+      VpcId: !Ref VPC_CS_Demo
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '6443'
+          ToPort: '6443'
+          CidrIp: !Ref PrivateSubnetCidr
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Give RDP access to bastion host
+      VpcId: !Ref VPC_CS_Demo
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '3389'
+          ToPort: '3389'
+          CidrIp: 0.0.0.0/0  # Reemplaza con tu IP si es necesario
+  PrivateInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Give SSH access to private instances
+      VpcId: !Ref VPC_CS_Demo
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref SSMRole
+  SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: KubernetesInstancePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeTags
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                  - ssm:PutParameter
+                Resource: !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/k3s/cluster/token
+  Masterk3sInstance:
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: t2.large
+      ImageId: ami-0e1069ff507f234c0 # Ubuntu Noble 24.04 - Virginia
+      SecurityGroupIds:
+        - !Ref KS_Infra_SecurityGroup
+        - !Ref PrivateInstanceSecurityGroup
+      IamInstanceProfile: !Ref SSMInstanceProfile
+      MetadataOptions:
+        HttpTokens: required 
+        HttpPutResponseHopLimit: 1
+        InstanceMetadataTags: enabled
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 15
+      UserData:
+        Fn::Base64: !Sub |
+          #cloud-config
+          users:
+            - name: trendmicro
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              groups: sudo
+              home: /home/trendmicro
+              shell: /bin/bash
+              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+          runcmd:
+            - |
+              #!/bin/bash
+              aws s3 cp s3://cloudlab-yessenia/initial-script.sh /tmp/initial-script.sh
+              chmod +x /tmp/initial-script.sh
+              /tmp/initial-script.sh
+  BastionHost:
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: t2.large
+      SubnetId: !Ref PublicSubnet
+      ImageId: ami-0c55b159cbfafe1f0  # Ubuntu AMI, cambia según la región
+      KeyName: !Ref KeyName
+      SecurityGroupIds:
+        - !Ref BastionSecurityGroup
+      UserData:
+        Fn::Base64: |
+          <powershell>
+          # Descargar y ejecutar el script de S3
+          if (-not (Get-Module -ListAvailable -Name AWSPowerShell)) {
+              Install-Package -Name AWSPowerShell -Source PSGallery -Force -AllowClobber
+          }
+          $scriptUrl = "https://s3.amazonaws.com/cloudlab-yessenia/win_script.ps1"
+          $localPath = "$env:USERPROFILE\Downloads\win_script.ps1"
+          Invoke-WebRequest -Uri $scriptUrl -OutFile $localPath
+          Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File $localPath" -Wait
+          </powershell>
+Outputs:
+  InstanceId:
+    Description: ID de la instancia EC2
+    Value: !Ref MyEC2Instance
+
+  InstancePublicIP:
+    Description: Dirección IP pública de la instancia EC2
+    Value: !GetAtt MyEC2Instance.PublicIp
+
+  SecurityGroupId:
+    Description: ID del grupo de seguridad de la instancia
+    Value: !Ref InstanceSecurityGroup
