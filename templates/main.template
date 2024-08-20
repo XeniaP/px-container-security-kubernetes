@@ -167,7 +167,7 @@ Resources:
               groups: sudo
               home: /home/trendmicro
               shell: /bin/bash
-              passwd: ${DefaultPassword | password_hash('$6$', rounds=4096)}
+              passwd: ${DefaultPassword}
           runcmd:
             - |
               #!/bin/bash
@@ -268,15 +268,3 @@ Resources:
           Invoke-WebRequest -Uri $scriptUrl -OutFile $localPath
           Start-Process -FilePath "powershell.exe" -ArgumentList "-ExecutionPolicy Bypass -File $localPath" -Wait
           </powershell>
-Outputs:
-  InstanceId:
-    Description: ID de la instancia EC2
-    Value: !Ref MyEC2Instance
-
-  InstancePublicIP:
-    Description: Dirección IP pública de la instancia EC2
-    Value: !GetAtt MyEC2Instance.PublicIp
-
-  SecurityGroupId:
-    Description: ID del grupo de seguridad de la instancia
-    Value: !Ref InstanceSecurityGroup
