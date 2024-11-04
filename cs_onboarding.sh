@@ -28,14 +28,17 @@ if [[ -f "$CONFIG_FILE" ]]; then
 
   IMAGE_TAG="flask_app"
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
+  kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ftp"
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
+  kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ssh_bastion"
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
+  kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 else
   api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
