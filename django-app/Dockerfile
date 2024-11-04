@@ -1,5 +1,6 @@
 # Dockerfile
-FROM python:3.9.20-alpine3.19
+FROM python:3.9.20
+
 # Build App
 COPY appcode/requirements.txt /usr/src/app/
 WORKDIR /usr/src/app
