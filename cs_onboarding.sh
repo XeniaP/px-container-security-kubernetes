@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# Verifica si la variable de entorno AUTH_TOKEN está configurada
 if [ -z "$API_KEY" ]; then
-  echo "Error: La variable de entorno AUTH_TOKEN no está configurada."
+  echo "Error: La variable de entorno API_KEY no está configurada."
   exit 1
 fi
 
 sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
-
 CONFIG_FILE="/home/ubuntu/CS_DEMO/overrides.yaml"
 
 if [[ -f "$CONFIG_FILE" ]]; then
@@ -69,6 +67,7 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 
 kubectl create secret docker-registry ecr-secret --docker-server="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com" --docker-username=AWS --docker-password=$(aws ecr get-login-password --region "${AWS_REGION}") --docker-email=px-demo@trendmicro.com
 git clone https://github.com/XeniaP/px-container-security-kubernetes.git
+git -C ./px-container-security-kubernetes pull origin main
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
 envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
