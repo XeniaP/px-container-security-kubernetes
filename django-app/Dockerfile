@@ -17,7 +17,8 @@ COPY cert.pem /cert.pem
 ADD https://secure.eicar.org/eicar.com /eicar.com
 
 #RUN apk update && apk add --no-cache --upgrade bash build-base libffi-dev
-
+RUN chmod +x /reset_db.sh
+RUN chmod +x /runapp.sh
 # Initialize app database
 RUN ["/reset_db.sh"]
 
