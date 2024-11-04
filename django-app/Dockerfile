@@ -1,5 +1,5 @@
 # Dockerfile
-FROM python:3.9.20
+FROM python:3.10-slim
 
 # Build App
 COPY appcode/requirements.txt /usr/src/app/
