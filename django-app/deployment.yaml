@@ -25,6 +25,8 @@ spec:
         runAsGroup: 3000
         fsGroup: 2000
         fsGroupChangePolicy: Always
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: django-app
         image: "${IMAGE_REGISTRY}"
@@ -76,6 +78,8 @@ spec:
       labels:
         app: log4j
     spec:
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: log4j
         image: "${IMAGE_REGISTRY}"
