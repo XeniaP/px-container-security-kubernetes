@@ -39,16 +39,11 @@ if [ "$NODE_TYPE" == "Master" ]; then
     COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
     SHARED_KUBE_DIR="/usr/local/share/kube"
     KUBECONFIG_PATH="$SHARED_KUBE_DIR/config"
-    echo "Creando el directorio compartido en $SHARED_KUBE_DIR..."
     sudo mkdir -p $SHARED_KUBE_DIR
-    echo "Copiando el archivo de configuración k3s.yaml a $KUBECONFIG_PATH..."
     sudo cp /etc/rancher/k3s/k3s.yaml $KUBECONFIG_PATH
-    echo "Cambiando los permisos del archivo de configuración..."
     sudo chmod 644 $KUBECONFIG_PATH
-    echo "Configurando la variable KUBECONFIG globalmente..."
     if ! grep -q "export KUBECONFIG=$KUBECONFIG_PATH" /etc/profile; then
         echo "export KUBECONFIG=$KUBECONFIG_PATH" | sudo tee -a /etc/profile
     fi
-    echo "Aplicando los cambios de perfil..."
     source /etc/profile
 fi

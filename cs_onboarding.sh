@@ -4,8 +4,6 @@ if [ -z "$API_KEY" ]; then
   echo "Error: La variable de entorno API_KEY no está configurada."
   exit 1
 fi
-
-sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
 CONFIG_FILE="/home/ubuntu/CS_DEMO/overrides.yaml"
 
 if [[ -f "$CONFIG_FILE" ]]; then
