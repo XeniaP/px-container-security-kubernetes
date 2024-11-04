@@ -19,7 +19,7 @@ ADD https://secure.eicar.org/eicar.com /eicar.com
 #RUN apk update && apk add --no-cache --upgrade bash build-base libffi-dev
 
 # Initialize app database
-RUN ["/reset_db.sh"]
+#RUN ["/reset_db.sh"]
 
 # Expose ports to internet
 EXPOSE 8000
