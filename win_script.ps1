@@ -1,10 +1,10 @@
 # Define primero las variables
-$username = "trendmicro"
-$password = ConvertTo-SecureString "trendmicro" -AsPlainText -Force
+$username = "administrator"
+$password = ConvertTo-SecureString "Trendmicr0!" -AsPlainText -Force
 New-LocalUser -Name $username -Password $password -FullName "trendmicro" -Description "User for trendmicro access"
 Add-LocalGroupMember -Group "Administrators" -Member $username
 
-net user Administrator "trendmicro"
+net user Administrator "Trendmicr0!"
 
 Get-NetFirewallRule -DisplayGroup "Remote Desktop" | Where-Object {$_.Enabled -eq "True"}
 Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
@@ -28,7 +28,7 @@ Start-Process -FilePath $gitInstaller -ArgumentList "/VERYSILENT" -Wait
 # Configurar pestañas predeterminadas en Chrome para el Kubernetes Dashboard
 $chromePrefsPath = "$env:APPDATA\Google\Chrome\User Data\Default\Preferences"
 # Obtener MASTER_IP desde SSM Parameter Store
-$masterIp = (Get-SSMParameterValue -Name "/k3s/cluster/master-ip").Value
+$masterIp = (Get-SSMParameterValue -Name "/k3s/cluster/CS-master-ip").Value
 # Configuración del entorno utilizando MASTER_IP
 $dashboardUrl = "http://$masterIp:6443/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/"
 $chromePrefs = @{

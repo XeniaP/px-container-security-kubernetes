@@ -1,0 +1,536 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Px Container Security Kubernetes Demo Template",
+    "Resources": {
+        "VPCCSDemo": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16",
+                "EnableDnsSupport": true,
+                "EnableDnsHostnames": true,
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "VPC-Container"
+                    }
+                ]
+            }
+        },
+        "NatGateway": {
+            "Type": "AWS::EC2::NatGateway",
+            "Properties": {
+                "AllocationId": {
+                    "Fn::GetAtt": [
+                        "EIPForNAT",
+                        "AllocationId"
+                    ]
+                },
+                "SubnetId": {
+                    "Ref": "PublicSubnet"
+                }
+            }
+        },
+        "EIPForNAT": {
+            "Type": "AWS::EC2::EIP",
+            "Properties": {
+                "Domain": "vpc"
+            }
+        },
+        "MasterIP": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Name": "/k3s/cluster/CS-master-ip",
+                "Type": "String",
+                "Value": "1.1.1.1"
+            }
+        },
+        "Token": {
+            "Type": "AWS::SSM::Parameter",
+            "Properties": {
+                "Name": "/k3s/cluster/CS-token",
+                "Type": "String",
+                "Value": "Token"
+            }
+        },
+        "PublicSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "CidrBlock": "10.0.1.0/24",
+                "MapPublicIpOnLaunch": true,
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        0,
+                        {
+                            "Fn::GetAZs": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "PrivateSubnet": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "CidrBlock": "10.0.2.0/24",
+                "MapPublicIpOnLaunch": false,
+                "AvailabilityZone": {
+                    "Fn::Select": [
+                        0,
+                        {
+                            "Fn::GetAZs": ""
+                        }
+                    ]
+                }
+            }
+        },
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties": {
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Container_InternetGateway"
+                    }
+                ]
+            }
+        },
+        "AttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "PublicRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "PublicRouteTable"
+                    }
+                ]
+            }
+        },
+        "PublicRoute": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": "AttachGateway",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "GatewayId": {
+                    "Ref": "InternetGateway"
+                }
+            }
+        },
+        "PublicSubnetRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PublicSubnet"
+                },
+                "RouteTableId": {
+                    "Ref": "PublicRouteTable"
+                }
+            }
+        },
+        "PrivateRouteTable": {
+            "Type": "AWS::EC2::RouteTable",
+            "Properties": {
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                }
+            }
+        },
+        "PrivateSubnetRoute": {
+            "Type": "AWS::EC2::Route",
+            "Properties": {
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                },
+                "DestinationCidrBlock": "0.0.0.0/0",
+                "NatGatewayId": {
+                    "Ref": "NatGateway"
+                }
+            }
+        },
+        "PrivateSubnetRouteTableAssociation": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet"
+                },
+                "RouteTableId": {
+                    "Ref": "PrivateRouteTable"
+                }
+            }
+        },
+        "KSInfraSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Security Access for Kubernetes Infra",
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "6443",
+                        "ToPort": "6443",
+                        "CidrIp": "10.0.2.0/24"
+                    },
+                    {
+                        "IpProtocol": -1,
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "CidrIp": "10.0.0.0/16"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "BastionSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Give RDP access to bastion host",
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "3389",
+                        "ToPort": "3389",
+                        "CidrIp": "10.0.0.0/16"
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "PrivateInstanceSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Give SSH access to private instances",
+                "VpcId": {
+                    "Ref": "VPCCSDemo"
+                },
+                "SecurityGroupIngress": [
+                    {
+                        "IpProtocol": "tcp",
+                        "FromPort": "22",
+                        "ToPort": "22",
+                        "SourceSecurityGroupId": {
+                            "Ref": "BastionSecurityGroup"
+                        }
+                    }
+                ],
+                "SecurityGroupEgress": [
+                    {
+                        "IpProtocol": -1,
+                        "FromPort": -1,
+                        "ToPort": -1,
+                        "CidrIp": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        "SSMInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Roles": [
+                    {
+                        "Ref": "SSMRole"
+                    }
+                ]
+            }
+        },
+        "SSMRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": ["ec2.amazonaws.com", "ssm.amazonaws.com"]
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                },
+                "ManagedPolicyArns": [
+                    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+                    "arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess",
+                    "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+                ],
+                "Policies": [
+                    {
+                        "PolicyName": "KubernetesInstancePolicy",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ec2:DescribeInstances",
+                                        "ec2:DescribeTags"
+                                    ],
+                                    "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ssm:GetParameter",
+                                        "ssm:GetParameters",
+                                        "ssm:PutParameter"
+                                    ],
+                                    "Resource": "arn:aws:ssm:us-east-1:*:parameter/k3s/cluster/CS-*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ssm:SendCommand"
+                                    ],
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "Masterk3sLaunchTemplate": {
+            "Type": "AWS::EC2::LaunchTemplate",
+            "DependsOn": "Nodek3sLaunchTemplate",
+            "Properties": {
+                "LaunchTemplateData": {
+                    "InstanceType": "t2.large",
+                    "ImageId": "ami-005fc0f236362e99f",
+                    "SecurityGroupIds": [
+                        {
+                            "Ref": "KSInfraSecurityGroup"
+                        },
+                        {
+                            "Ref": "PrivateInstanceSecurityGroup"
+                        }
+                    ],
+                    "IamInstanceProfile": {
+                        "Name": {
+                            "Ref": "SSMInstanceProfile"
+                        }
+                    },
+                    "TagSpecifications": [
+                        {
+                            "ResourceType": "instance",
+                            "Tags": [
+                                {
+                                    "Key": "Name",
+                                    "Value": "Masterk3sInstance"
+                                },
+                                {
+                                    "Key": "Node-Type",
+                                    "Value": "Master"
+                                }
+                            ]
+                        }
+                    ],
+                    "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpPutResponseHopLimit": 1,
+                        "InstanceMetadataTags": "enabled",
+                        "HttpEndpoint": "enabled"
+                    },
+                    "BlockDeviceMappings": [
+                        {
+                            "DeviceName": "/dev/xvda",
+                            "Ebs": {
+                                "VolumeType": "gp3",
+                                "VolumeSize": 15
+                            }
+                        }
+                    ],
+                    "UserData": {
+                        "Fn::Base64": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "#!/bin/bash -xe\n",
+                                    "export DEBIAN_FRONTEND=noninteractive \n",
+                                    "export NEEDRESTART_MODE=a \n",
+                                    "sudo apt update -y && sudo apt upgrade -y || true \n",
+                                    "sudo apt install -y unzip jq || true \n",
+                                    "curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \n",
+                                    "unzip -o awscliv2.zip \n",
+                                    "sudo ./aws/install --update \n",
+                                    "curl https://yessenia-bucket-test-tm.s3.us-east-1.amazonaws.com/container_lab/initial-script.sh | bash >> /var/log/TrendLab.log \n"
+                                ]
+                            ]
+                        }
+                    }
+                    
+                }
+            }
+        },
+        "Masterk3sInstance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "SubnetId": {
+                    "Ref": "PrivateSubnet"
+                },
+                "LaunchTemplate": {
+                    "LaunchTemplateId": {
+                        "Ref": "Masterk3sLaunchTemplate"
+                    },
+                    "Version": 1
+                }
+            }
+        },
+        "Nodek3sLaunchTemplate": {
+            "Type": "AWS::EC2::LaunchTemplate",
+            "Properties": {
+                "LaunchTemplateData": {
+                    "InstanceType": "t2.medium",
+                    "ImageId": "ami-005fc0f236362e99f",
+                    "SecurityGroupIds": [
+                        {
+                            "Ref": "KSInfraSecurityGroup"
+                        },
+                        {
+                            "Ref": "PrivateInstanceSecurityGroup"
+                        }
+                    ],
+                    "IamInstanceProfile": {
+                        "Name": {
+                            "Ref": "SSMInstanceProfile"
+                        }
+                    },
+                    "BlockDeviceMappings": [
+                        {
+                            "DeviceName": "/dev/xvda",
+                            "Ebs": {
+                                "VolumeType": "gp3",
+                                "VolumeSize": 15
+                            }
+                        }
+                    ],
+                    "MetadataOptions": {
+                        "HttpTokens": "required",
+                        "HttpPutResponseHopLimit": 1,
+                        "InstanceMetadataTags": "enabled",
+                        "HttpEndpoint": "enabled"
+                    },
+                    "UserData": {
+                        "Fn::Base64": {
+                            "Fn::Join": [
+                                "",
+                                [
+                                    "#!/bin/bash -xe\n",
+                                    "export DEBIAN_FRONTEND=noninteractive \n",
+                                    "export NEEDRESTART_MODE=a \n",
+                                    "sudo apt update -y && sudo apt upgrade -y --no-install-recommends \n",
+                                    "sudo apt install -y unzip jq \n",
+                                    "curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \n",
+                                    "unzip -o awscliv2.zip \n",
+                                    "sudo ./aws/install --update \n",
+                                    "curl https://yessenia-bucket-test-tm.s3.us-east-1.amazonaws.com/container_lab/initial-script.sh | bash \n"
+                                ]
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "Nodek3sAutoScalingGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "VPCZoneIdentifier": [
+                    {
+                        "Ref": "PrivateSubnet"
+                    }
+                ],
+                "LaunchTemplate": {
+                    "LaunchTemplateId": {
+                        "Ref": "Nodek3sLaunchTemplate"
+                    },
+                    "Version": 1
+                },
+                "MinSize": 2,
+                "MaxSize": 5,
+                "DesiredCapacity": 3,
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Nodek3sInstance",
+                        "PropagateAtLaunch": true
+                    }
+                ]
+            }
+        },
+        "BastionHost": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "InstanceType": "t2.large",
+                "SubnetId": {
+                    "Ref": "PublicSubnet"
+                },
+                "ImageId": "ami-07cc1bbe145f35b58",
+                "SecurityGroupIds": [
+                    {
+                        "Ref": "BastionSecurityGroup"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": "<powershell>\n# Descargar y ejecutar el script de S3\nif (-not (Get-Module -ListAvailable -Name AWSPowerShell)) {\n    Install-Package -Name AWSPowerShell -Source PSGallery -Force -AllowClobber\n}\n$scriptUrl = \"https://s3.amazonaws.com/cloudlab-yessenia/win_script.ps1\"\n$localPath = \"$env:USERPROFILE\\Downloads\\win_script.ps1\"\nInvoke-WebRequest -Uri $scriptUrl -OutFile $localPath\nStart-Process -FilePath \"powershell.exe\" -ArgumentList \"-ExecutionPolicy Bypass -File $localPath\" -Wait\n</powershell>\n"
+                },
+                "IamInstanceProfile": { "Ref": "SSMInstanceProfile" },
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "Bastion"
+                    }
+                ]
+            }
+        },
+        "ECRepository": {
+            "Type": "AWS::ECR::Repository",
+            "Properties": {
+                "RepositoryName": "demo-px-repo",
+                "ImageScanningConfiguration": {
+                    "scanOnPush": true
+                },
+                "LifecyclePolicy": {
+                    "LifecyclePolicyText": "{\n  \"rules\": [\n    {\n      \"rulePriority\": 1,\n      \"description\": \"Delete old images\",\n      \"selection\": {\n        \"tagStatus\": \"untagged\",\n        \"countType\": \"imageCountMoreThan\",\n        \"countNumber\": 10\n      },\n      \"action\": {\n        \"type\": \"expire\"\n      }\n    }\n  ]\n}"
+                }
+            }
+        }
+    }
+}

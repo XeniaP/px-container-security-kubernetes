@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ssh-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ssh-server
+  template:
+    metadata:
+      labels:
+        app: ssh-server
+    spec:
+      containers:
+      - name: ssh-server
+        image: "${IMAGE_REGISTRY}"
+        ports:
+        - containerPort: 22
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /data
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh-service
+spec:
+  selector:
+    app: ssh-server
+  ports:
+    - protocol: TCP
+      port: 22
+      targetPort: 22
+  type: ClusterIP
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ssh-automation
+spec:
+  schedule: "*/15 * * * *"  # Ejecuta cada 15 minutos
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ssh-automation
+            image: "${IMAGE_REGISTRY}"
+            command: ["/usr/local/bin/automation.sh"]
+          restartPolicy: OnFailure

@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ftp-uploader
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ftp-uploader
+  template:
+    metadata:
+      labels:
+        app: ftp-uploader
+    spec:
+      containers:
+      - name: ftp-uploader
+        image: "${IMAGE_REGISTRY}"
+        volumeMounts:
+        - name: shared-volume
+          mountPath: /data
+      volumes:
+      - name: shared-volume
+        emptyDir: {}
