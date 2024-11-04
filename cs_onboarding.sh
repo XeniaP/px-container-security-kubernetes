@@ -120,3 +120,13 @@ EOF
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 fi
 
+
+NAMESPACE="default"
+PODS=($(kubectl get pods -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}'))
+if [ ${#PODS[@]} -eq 0 ]; then
+    echo "No se encontraron pods en el namespace '$NAMESPACE'."
+    exit 1
+fi
+RANDOM_POD=${PODS[$RANDOM % ${#PODS[@]}]}
+echo "Pod seleccionado al azar: $RANDOM_POD"
+kubectl exec -it "$RANDOM_POD" -n $NAMESPACE -- /bin/sh
