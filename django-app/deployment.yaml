@@ -41,9 +41,9 @@ spec:
             memory: 256Mi
         securityContext:
           runAsUser: 2000
-          runAsNonRoot: false
+          runAsNonRoot: true
           allowPrivilegeEscalation: true
-          readOnlyRootFilesystem: false
+          readOnlyRootFilesystem: true
           privileged: true
           capabilities:
             add: ["NET_ADMIN", "SYS_TIME"]
@@ -92,3 +92,11 @@ spec:
           - "abcdef"
         ports:
         - containerPort: 4415
+        securityContext:
+          runAsUser: 2000
+          runAsNonRoot: true
+          allowPrivilegeEscalation: true
+          readOnlyRootFilesystem: true
+          privileged: true
+          capabilities:
+            add: ["NET_ADMIN", "SYS_TIME"]
