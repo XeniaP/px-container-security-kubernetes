@@ -106,7 +106,7 @@ EOF
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ftp"
-  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG}./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
   docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
