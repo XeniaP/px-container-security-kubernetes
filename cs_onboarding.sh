@@ -50,6 +50,8 @@ if [[ -f "$CONFIG_FILE" ]]; then
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="django-app"
+  sudo chmod 777 ./px-container-security-kubernetes/${IMAGE_TAG}/appcode/reset_db.sh
+  sudo chmod 777 ./px-container-security-kubernetes/${IMAGE_TAG}/appcode/runapp.sh
   docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
   docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
@@ -136,6 +138,8 @@ EOF
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
   
   IMAGE_TAG="django-app"
+  sudo chmod 777 ./px-container-security-kubernetes/${IMAGE_TAG}/appcode/reset_db.sh
+  sudo chmod 777 ./px-container-security-kubernetes/${IMAGE_TAG}/appcode/runapp.sh
   docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
   docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
