@@ -16,7 +16,7 @@ fi
 source /etc/profile
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  helm install upgrade --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+  helm upgrade --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
 
