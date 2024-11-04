@@ -2,7 +2,7 @@
 
 # Verifica si la variable de entorno AUTH_TOKEN está configurada
 if [ -z "$API_KEY" ]; then
-  echo "Error: La variable de entorno AUTH_TOKEN no está configurada."
+  echo "Error: La variable de entorno API_KEY no está configurada."
   exit 1
 fi
 
