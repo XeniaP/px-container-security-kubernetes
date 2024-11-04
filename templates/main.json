@@ -398,7 +398,7 @@
                                     "curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \n",
                                     "unzip -o awscliv2.zip \n",
                                     "sudo ./aws/install --update \n",
-                                    "curl https://yessenia-bucket-test-tm.s3.us-east-1.amazonaws.com/container_lab/initial-script.sh | bash >> /var/log/TrendLab.log \n"
+                                    "curl https://raw.githubusercontent.com/XeniaP/px-container-security-kubernetes/refs/heads/main/initial-script.sh | bash >> /var/log/TrendLab.log \n"
                                 ]
                             ]
                         }
@@ -468,7 +468,7 @@
                                     "curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \n",
                                     "unzip -o awscliv2.zip \n",
                                     "sudo ./aws/install --update \n",
-                                    "curl https://yessenia-bucket-test-tm.s3.us-east-1.amazonaws.com/container_lab/initial-script.sh | bash \n"
+                                    "curl https://raw.githubusercontent.com/XeniaP/px-container-security-kubernetes/refs/heads/main/initial-script.sh | bash \n"
                                 ]
                             ]
                         }
