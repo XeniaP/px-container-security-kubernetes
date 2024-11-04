@@ -48,6 +48,14 @@ if [[ -f "$CONFIG_FILE" ]]; then
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
   kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
+
+  IMAGE_TAG="django-app"
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+
+  export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
+  kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
+  envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 else
   api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
     --header 'Content-Type: application/json' \
@@ -121,6 +129,13 @@ EOF
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ssh_bastion"
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+
+  export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
+  envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
+
+  IMAGE_TAG="django-app"
   docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
   docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 

