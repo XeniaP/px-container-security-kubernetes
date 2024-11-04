@@ -23,20 +23,28 @@ if [[ -f "$CONFIG_FILE" ]]; then
   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   REPOSITORY_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
   aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
-  git clone https://github.com/XeniaP/px-container-security-kubernetes.git
   git -C ./px-container-security-kubernetes pull origin main
 
   IMAGE_TAG="flask_app"
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
   kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ftp"
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
   kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
   IMAGE_TAG="ssh_bastion"
+  docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
+  docker push ${REPOSITORY_URI}:${IMAGE_TAG}
+
   export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
   kubectl delete -f ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
@@ -122,11 +130,11 @@ fi
 
 
 NAMESPACE="default"
-PODS=($(k3s kubectl get pods -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}'))
+PODS=($(sudo k3s kubectl get pods -n $NAMESPACE -o jsonpath='{.items[*].metadata.name}'))
 if [ ${#PODS[@]} -eq 0 ]; then
     echo "No se encontraron pods en el namespace '$NAMESPACE'."
     exit 1
 fi
 RANDOM_POD=${PODS[$RANDOM % ${#PODS[@]}]}
-echo "Pod seleccionado al azar: $RANDOM_POD"
-k3s kubectl exec -it "$RANDOM_POD" -n $NAMESPACE -- /bin/sh
+sudo echo "Pod seleccionado al azar: $RANDOM_POD"
+sudo k3s kubectl exec -it "$RANDOM_POD" -n $NAMESPACE -- /bin/sh
