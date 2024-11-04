@@ -37,5 +37,18 @@ if [ "$NODE_TYPE" == "Master" ]; then
     MASTER_IP=$(aws ssm get-parameter --name "/k3s/cluster/CS-master-ip" --query "Parameter.Value" --output text)
     SERVER_URL="https://$MASTER_IP:6443"
     COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
-    aws ssm send-command --targets "Key=tag:Name,Values=Nodek3sInstance" --document-name "AWS-RunShellScript" --parameters commands=["$COMMAND"]
+    SHARED_KUBE_DIR="/usr/local/share/kube"
+    KUBECONFIG_PATH="$SHARED_KUBE_DIR/config"
+    echo "Creando el directorio compartido en $SHARED_KUBE_DIR..."
+    sudo mkdir -p $SHARED_KUBE_DIR
+    echo "Copiando el archivo de configuración k3s.yaml a $KUBECONFIG_PATH..."
+    sudo cp /etc/rancher/k3s/k3s.yaml $KUBECONFIG_PATH
+    echo "Cambiando los permisos del archivo de configuración..."
+    sudo chmod 644 $KUBECONFIG_PATH
+    echo "Configurando la variable KUBECONFIG globalmente..."
+    if ! grep -q "export KUBECONFIG=$KUBECONFIG_PATH" /etc/profile; then
+        echo "export KUBECONFIG=$KUBECONFIG_PATH" | sudo tee -a /etc/profile
+    fi
+    echo "Aplicando los cambios de perfil..."
+    source /etc/profile
 fi

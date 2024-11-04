@@ -27,6 +27,8 @@ CONFIG_FILE="/home/ubuntu/CS_DEMO/overrides.yaml"
 # Crea el directorio si no existe
 mkdir -p "$(dirname "$CONFIG_FILE")"
 
+echo $api_key_cs
+
 # Escribe el contenido en el archivo YAML
 cat << EOF > "$CONFIG_FILE"
 cloudOne: 
