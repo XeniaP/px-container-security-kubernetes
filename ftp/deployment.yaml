@@ -12,6 +12,8 @@ spec:
       labels:
         app: ftp-uploader
     spec:
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: ftp-uploader
         image: "${IMAGE_REGISTRY}"

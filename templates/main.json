@@ -321,6 +321,13 @@
                                         "ssm:SendCommand"
                                     ],
                                     "Resource": "*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "ecr:*"
+                                    ],
+                                    "Resource": "*"
                                 }
                             ]
                         }

@@ -8,29 +8,25 @@ fi
 
 sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
 
-# Realizar la solicitud a la API y extraer el valor de apiKey
-api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
-  --header 'Content-Type: application/json' \
-  --header 'Accept: application/json' \
-  --header "Authorization: Bearer $API_KEY" \
-  --data '{
-    "name": "Demo_Container_PX",
-    "groupId": "00000000-0000-0000-0000-000000000000",
-    "description": "",
-    "policyId": "",
-    "resourceId": ""
-  }' | jq -r '.apiKey')
-
-# Define la ruta y el nombre del archivo YAML
 CONFIG_FILE="/home/ubuntu/CS_DEMO/overrides.yaml"
 
-# Crea el directorio si no existe
-mkdir -p "$(dirname "$CONFIG_FILE")"
-
-echo $api_key_cs
-
-# Escribe el contenido en el archivo YAML
-cat << EOF > "$CONFIG_FILE"
+if [[ -f "$CONFIG_FILE" ]]; then
+  helm install upgrade --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+else
+  api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
+    --header 'Content-Type: application/json' \
+    --header 'Accept: application/json' \
+    --header "Authorization: Bearer $API_KEY" \
+    --data '{
+      "name": "Demo_Container_PX",
+      "groupId": "00000000-0000-0000-0000-000000000000",
+      "description": "",
+      "policyId": "",
+      "resourceId": ""
+    }' | jq -r '.apiKey')
+  echo "El archivo overrides no existe. Registrando una nueva API Key..."
+  mkdir -p "$(dirname "$CONFIG_FILE")"
+  cat << EOF > "$CONFIG_FILE"
 cloudOne: 
     apiKey: $api_key_cs
     endpoint: https://container.us-1.cloudone.trendmicro.com
@@ -61,8 +57,8 @@ securityContext:
       allowPrivilegeEscalation: true
       privileged: true
 EOF
-
-helm install trendmicro --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+  helm install trendmicro --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+fi
 
 AWS_REGION="us-east-1"
 REPOSITORY_NAME="demo-px-repo"
@@ -71,6 +67,7 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REPOSITORY_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
+kubectl create secret docker-registry ecr-secret --docker-server="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com" --docker-username=AWS --docker-password=$(aws ecr get-login-password --region "${AWS_REGION}") --docker-email=px-demo@trendmicro.com
 git clone https://github.com/XeniaP/px-container-security-kubernetes.git
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"

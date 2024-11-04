@@ -3,8 +3,6 @@ kind: StorageClass
 metadata:
   name: local-path
 provisioner: rancher.io/local-path
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -113,7 +111,7 @@ spec:
         app: flask-app
     spec:
       imagePullSecrets:
-      - name: acr-secret
+      - name: ecr-secret
       containers:
       - name: flask-app
         image: "${IMAGE_REGISTRY}"
@@ -147,6 +145,8 @@ spec:
       labels:
         app: django-app
     spec:
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: django-app
         image: "${IMAGE_REGISTRY}"
@@ -167,6 +167,8 @@ spec:
       labels:
         app: imagick
     spec:
+      imagePullSecrets:
+      - name: ecr-secret
       containers:
       - name: imagick
         image: "${IMAGE_REGISTRY}"
