@@ -2,9 +2,11 @@
 
 # Verifica si la variable de entorno AUTH_TOKEN está configurada
 if [ -z "$API_KEY" ]; then
-  echo "Error: La variable de entorno API_KEY no está configurada."
+  echo "Error: La variable de entorno AUTH_TOKEN no está configurada."
   exit 1
 fi
+
+sudo cp /etc/rancher/k3s/k3s.yaml $HOME/.kube/config
 
 # Realizar la solicitud a la API y extraer el valor de apiKey
 api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
@@ -70,28 +72,25 @@ aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --
 git clone https://github.com/XeniaP/px-container-security-kubernetes.git
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
-envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment-template.yaml | kubectl apply -f -
+envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
 IMAGE_TAG="flask_app"
-docker build -t ${REPOSITORY_NAME}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
-docker tag ${REPOSITORY_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:${IMAGE_TAG}
+docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
 docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
-envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment-template.yaml | kubectl apply -f -
+envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
 IMAGE_TAG="ftp"
-docker build -t ${REPOSITORY_NAME}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
-docker tag ${REPOSITORY_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:${IMAGE_TAG}
+docker build -t ${REPOSITORY_URI}:${IMAGE_TAG}./px-container-security-kubernetes/${IMAGE_TAG}/
 docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
-envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment-template.yaml | kubectl apply -f -
+envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 
 IMAGE_TAG="ssh_bastion"
-docker build -t ${REPOSITORY_NAME}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
-docker tag ${REPOSITORY_NAME}:${IMAGE_TAG} ${REPOSITORY_URI}:${IMAGE_TAG}
+docker build -t ${REPOSITORY_URI}:${IMAGE_TAG} ./px-container-security-kubernetes/${IMAGE_TAG}/
 docker push ${REPOSITORY_URI}:${IMAGE_TAG}
 
 export IMAGE_REGISTRY="$REPOSITORY_URI:$IMAGE_TAG"
-envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment-template.yaml | kubectl apply -f -
+envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
