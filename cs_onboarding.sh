@@ -63,7 +63,7 @@ else
   api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
 --header 'Content-Type: application/json' \
 --header 'Accept: application/json' \
---header 'Authorization: Bearer $API_KEY' \
+--header "Authorization: Bearer $API_KEY" \
 --data '{
   "name": "Demo_Container_PX",
   "groupId": "00000000-0000-0000-0000-000000000000",
