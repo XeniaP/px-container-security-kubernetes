@@ -61,16 +61,16 @@ if [[ -f "$CONFIG_FILE" ]]; then
   envsubst < ./px-container-security-kubernetes/${IMAGE_TAG}/deployment.yaml | kubectl apply -f -
 else
   api_key_cs=$(curl --location 'https://api.xdr.trendmicro.com/v3.0/containerSecurity/kubernetesClusters' \
-    --header 'Content-Type: application/json' \
-    --header 'Accept: application/json' \
-    --header "Authorization: Bearer $API_KEY" \
-    --data '{
-      "name": "Demo_Container_PX",
-      "groupId": "00000000-0000-0000-0000-000000000000",
-      "description": "",
-      "policyId": "",
-      "resourceId": ""
-    }' | jq -r '.apiKey')
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--header 'Authorization: Bearer $API_KEY' \
+--data '{
+  "name": "Demo_Container_PX",
+  "groupId": "00000000-0000-0000-0000-000000000000",
+  "description": "",
+  "policyId": "",
+  "resourceId": ""
+}' | jq -r '.apiKey')
   echo "$api_key_cs"
   echo "El archivo overrides no existe. Registrando una nueva API Key..."
   sudo mkdir -p "$(dirname "$CONFIG_FILE")"
