@@ -73,6 +73,7 @@ else
     }' | jq -r '.apiKey')
   echo "El archivo overrides no existe. Registrando una nueva API Key..."
   sudo mkdir -p "$(dirname "$CONFIG_FILE")"
+  sudo chown $USER "$CONFIG_FILE"
   cat << EOF > "$CONFIG_FILE"
 cloudOne: 
     apiKey: $api_key_cs
