@@ -71,6 +71,7 @@ else
       "policyId": "",
       "resourceId": ""
     }' | jq -r '.apiKey')
+  echo "$api_key_cs"
   echo "El archivo overrides no existe. Registrando una nueva API Key..."
   sudo mkdir -p "$(dirname "$CONFIG_FILE")"
   sudo chown $USER:$USER "$HOME/CS_DEMO"
