@@ -4,7 +4,7 @@ if [ -z "$API_KEY" ]; then
   echo "Error: La variable de entorno API_KEY no está configurada."
   exit 1
 fi
-CONFIG_FILE="/home/ubuntu/CS_DEMO/overrides.yaml"
+CONFIG_FILE="$HOME/CS_DEMO/overrides.yaml"
 SHARED_KUBE_DIR="/usr/local/share/kube"
 KUBECONFIG_PATH="$SHARED_KUBE_DIR/config"
 sudo mkdir -p $SHARED_KUBE_DIR
@@ -17,7 +17,7 @@ fi
 source /etc/profile
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  helm upgrade --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+  helm upgrade --namespace trendmicro-system --create-namespace --values $HOME/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
 
@@ -106,7 +106,7 @@ securityContext:
       allowPrivilegeEscalation: true
       privileged: true
 EOF
-  helm install trendmicro --namespace trendmicro-system --create-namespace --values /home/ubuntu/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+  helm install trendmicro --namespace trendmicro-system --create-namespace --values $HOME/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
 
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
