@@ -5,16 +5,16 @@ if [ -z "$API_KEY" ]; then
   exit 1
 fi
 CONFIG_FILE="$HOME/CS_DEMO/overrides.yaml"
-SHARED_KUBE_DIR="/usr/local/share/kube"
-KUBECONFIG_PATH="$SHARED_KUBE_DIR/config"
-sudo mkdir -p $SHARED_KUBE_DIR
-sudo cp /etc/rancher/k3s/k3s.yaml $KUBECONFIG_PATH
-sudo chmod 644 $KUBECONFIG_PATH
-sudo chown $USER /var/run/docker.sock
-if ! grep -q "export KUBECONFIG=$KUBECONFIG_PATH" /etc/profile; then
-    echo "export KUBECONFIG=$KUBECONFIG_PATH" | sudo tee -a /etc/profile
-fi
-source /etc/profile
+#SHARED_KUBE_DIR="/usr/local/share/kube"
+#KUBECONFIG_PATH="$SHARED_KUBE_DIR/config"
+#sudo mkdir -p $SHARED_KUBE_DIR
+#sudo cp /etc/rancher/k3s/k3s.yaml $KUBECONFIG_PATH
+#sudo chmod 644 $KUBECONFIG_PATH
+#sudo chown $USER /var/run/docker.sock
+#if ! grep -q "export KUBECONFIG=$KUBECONFIG_PATH" /etc/profile; then
+#    echo "export KUBECONFIG=$KUBECONFIG_PATH" | sudo tee -a /etc/profile
+#fi
+#source /etc/profile
 
 if [[ -f "$CONFIG_FILE" ]]; then
   helm upgrade --namespace trendmicro-system --create-namespace --values $HOME/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
