@@ -42,4 +42,6 @@ else
     MASTER_IP=$(aws ssm get-parameter --name "/k3s/cluster/CS-master-ip" --query "Parameter.Value" --output text)
     SERVER_URL="https://$MASTER_IP:6443"
     curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -
+    sleep 5
+    export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
 fi
