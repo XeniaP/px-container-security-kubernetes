@@ -36,7 +36,7 @@ if [ "$NODE_TYPE" == "Master" ]; then
     KS_TOKEN=$(aws ssm get-parameter --name "/k3s/cluster/CS-token" --with-decryption --query "Parameter.Value" --output text)
     MASTER_IP=$(aws ssm get-parameter --name "/k3s/cluster/CS-master-ip" --query "Parameter.Value" --output text)
     SERVER_URL="https://$MASTER_IP:6443"
-    COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
+    #COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
     export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
 else
     KS_TOKEN=$(aws ssm get-parameter --name "/k3s/cluster/CS-token" --with-decryption --query "Parameter.Value" --output text)
