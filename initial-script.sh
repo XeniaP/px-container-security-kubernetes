@@ -36,13 +36,11 @@ if [ "$NODE_TYPE" == "Master" ]; then
     KS_TOKEN=$(aws ssm get-parameter --name "/k3s/cluster/CS-token" --with-decryption --query "Parameter.Value" --output text)
     MASTER_IP=$(aws ssm get-parameter --name "/k3s/cluster/CS-master-ip" --query "Parameter.Value" --output text)
     SERVER_URL="https://$MASTER_IP:6443"
-    #COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
-    curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -
-else
-    SERVER_URL="https://$MASTER_IP:6443"
-    curl -sfL https://get.k3s.io | sh -s - --write-kubeconfig-mode 644 --cluster-init
-    sleep 5
+    COMMAND="curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -"
     export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
-    aws ssm put-parameter --name "/k3s/cluster/CS-token" --value "$(cat /var/lib/rancher/k3s/server/node-token)" --type SecureString --overwrite
-    aws ssm put-parameter --name "/k3s/cluster/CS-master-ip" --value "$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s "http://169.254.169.254/latest/meta-data/local-ipv4")" --type String --overwrite
+else
+    KS_TOKEN=$(aws ssm get-parameter --name "/k3s/cluster/CS-token" --with-decryption --query "Parameter.Value" --output text)
+    MASTER_IP=$(aws ssm get-parameter --name "/k3s/cluster/CS-master-ip" --query "Parameter.Value" --output text)
+    SERVER_URL="https://$MASTER_IP:6443"
+    curl -sfL https://get.k3s.io | K3S_URL=$SERVER_URL K3S_TOKEN=$KS_TOKEN sh -
 fi
