@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mitre-runtime-sim
+spec:
+  replicas: 14
+  selector:
+    matchLabels:
+      app: mitre-runtime-sim
+  template:
+    metadata:
+      labels:
+        app: mitre-runtime-sim
+    spec:
+      containers:
+      - name: simulate
+        image: kalilinux/kali-rolling
+        securityContext:
+          runAsNonRoot: false
+          privileged: true
+          allowPrivilegeEscalation: true
+        command: ["sh", "-c"]
+        args:
+        - |
+          ID=$(hostname | awk -F '-' '{print $NF}');
+          case $ID in
+            0) useradd -r -K SYS_UID_MIN=100 -K SYS_UID_MAX=999 -d /nonexistent -g nogroup -s /usr/sbin/nologin testuser;;
+            1) apt update && apt install -y nmap -qq;;
+            2) chmod u+s /bin/bash;;
+            3) mkdir -p /root/.ssh && echo 'testkey' > /root/.ssh/test_key && cat /root/.ssh/test_key;;
+            4) apt update && apt install -y nmap -qq && nmap -p 22 127.0.0.1;;
+            5) mkdir /root/.hidden_dir;;
+            6) apt update && apt install -y nmap -qq && nmap -p 22 127.0.0.1;;
+            7) find / -name id_rsa 2>/dev/null || true;;
+            8) rm -f //.bash_history;;
+            9) touch /app/test && apt install -y e2fsprogs -qq && chattr +i /app/test;;
+            10) echo "python manage.py runserver 0.0.0.0:4412 --url stratum+tcp://scrypt.auto.nicehash.com:9200";;
+            11) echo "kubectl get pods --all-namespaces";;
+            12) xargs -I % kill -9 % || true;;
+            13) mount -o remount,rw / || true;;
+          esac;
+          sleep infinity

