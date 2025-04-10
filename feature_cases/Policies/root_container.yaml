@@ -12,8 +12,13 @@ spec:
       labels:
         app: nginx
     spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: nginx
         image: nginx:1.14.2
         securityContext:
+          runAsNonRoot: false
           privileged: true
+          allowPrivilegeEscalation: true
