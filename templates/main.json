@@ -1,6 +1,23 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
     "Description": "Px Container Security Kubernetes Demo Template",
+    "Parameters": {
+      "bastionHostAMI": {
+        "Type": "AWS::SSM::Parameter::Value<String>",
+        "Default": "/aws/service/ami-windows-latest/EC2LaunchV2-Windows_Server-2019-English-Full-Base",
+        "Description": "Image Id of the Windows AMI"
+      },
+      "k3sNodeAMI": {
+        "Type": "AWS::SSM::Parameter::Value<String>",
+        "Default": "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id",
+        "Description": "Image Id of the Windows AMI"
+      },
+      "KeyPairName": {
+        "Type": "AWS::EC2::KeyPair::KeyName",
+        "Description": "Nombre del par de llaves EC2 para acceso SSH",
+        "Default": "yessenia_us1"
+      }
+    },
     "Resources": {
         "VPCCSDemo": {
             "Type": "AWS::EC2::VPC",
@@ -187,18 +204,42 @@
                     "Ref": "VPCCSDemo"
                 },
                 "SecurityGroupIngress": [
-                    {
-                        "IpProtocol": "tcp",
-                        "FromPort": "6443",
-                        "ToPort": "6443",
-                        "CidrIp": "10.0.2.0/24"
-                    },
-                    {
-                        "IpProtocol": -1,
-                        "FromPort": -1,
-                        "ToPort": -1,
-                        "CidrIp": "10.0.0.0/16"
-                    }
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": "6443",
+                    "ToPort": "6443",
+                    "CidrIp": "10.0.2.0/24"
+                },
+                {
+                    "IpProtocol": -1,
+                    "FromPort": -1,
+                    "ToPort": -1,
+                    "CidrIp": "10.0.0.0/16"
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 6443,
+                    "ToPort": 6443,
+                    "CidrIp": "201.149.37.34/32"
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 6443,
+                    "ToPort": 6443,
+                    "CidrIp": "177.126.3.34/32"
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 6443,
+                    "ToPort": 6443,
+                    "CidrIp": "187.189.174.255/32"
+                },
+                {
+                    "IpProtocol": "tcp",
+                    "FromPort": 6443,
+                    "ToPort": 6443,
+                    "CidrIp": "177.222.31.114/32"
+                }
                 ],
                 "SecurityGroupEgress": [
                     {
@@ -340,8 +381,9 @@
             "DependsOn": "Nodek3sLaunchTemplate",
             "Properties": {
                 "LaunchTemplateData": {
+                    "KeyName": { "Ref": "KeyPairName" },
                     "InstanceType": "t2.large",
-                    "ImageId": "ami-005fc0f236362e99f",
+                    "ImageId": { "Ref": "k3sNodeAMI" },
                     "SecurityGroupIds": [
                         {
                             "Ref": "KSInfraSecurityGroup"
@@ -376,15 +418,6 @@
                         "InstanceMetadataTags": "enabled",
                         "HttpEndpoint": "enabled"
                     },
-                    "BlockDeviceMappings": [
-                        {
-                            "DeviceName": "/dev/xvda",
-                            "Ebs": {
-                                "VolumeType": "gp3",
-                                "VolumeSize": 15
-                            }
-                        }
-                    ],
                     "UserData": {
                         "Fn::Base64": {
                             "Fn::Join": [
@@ -410,9 +443,7 @@
         "Masterk3sInstance": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-                "SubnetId": {
-                    "Ref": "PrivateSubnet"
-                },
+                "SubnetId": { "Ref": "PublicSubnet" },
                 "LaunchTemplate": {
                     "LaunchTemplateId": {
                         "Ref": "Masterk3sLaunchTemplate"
@@ -426,7 +457,7 @@
             "Properties": {
                 "LaunchTemplateData": {
                     "InstanceType": "t2.medium",
-                    "ImageId": "ami-005fc0f236362e99f",
+                    "ImageId": { "Ref": "k3sNodeAMI" },
                     "SecurityGroupIds": [
                         {
                             "Ref": "KSInfraSecurityGroup"
@@ -509,7 +540,7 @@
                 "SubnetId": {
                     "Ref": "PublicSubnet"
                 },
-                "ImageId": "ami-07cc1bbe145f35b58",
+                "ImageId": { "Ref": "bastionHostAMI" },
                 "SecurityGroupIds": [
                     {
                         "Ref": "BastionSecurityGroup"
