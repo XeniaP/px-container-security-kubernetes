@@ -21,6 +21,8 @@ if [[ -f "$CONFIG_FILE" ]]; then
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
 
+  sudo usermod -aG docker "$USER"
+
   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   REPOSITORY_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
   aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
@@ -110,6 +112,8 @@ EOF
 
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
+
+  sudo usermod -aG docker "$USER"
 
   ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
   REPOSITORY_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY_NAME}"
