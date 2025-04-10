@@ -17,7 +17,7 @@ CONFIG_FILE="$HOME/CS_DEMO/overrides.yaml"
 #source /etc/profile
 
 if [[ -f "$CONFIG_FILE" ]]; then
-  helm upgrade --namespace trendmicro-system --create-namespace --values $HOME/CS_DEMO/overrides.yaml https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
+  helm upgrade --namespace trendmicro-system --create-namespace --values $HOME/CS_DEMO/overrides.yaml trendmicro https://github.com/trendmicro/cloudone-container-security-helm/archive/master.tar.gz
   AWS_REGION="us-east-1"
   REPOSITORY_NAME="demo-px-repo"
 
