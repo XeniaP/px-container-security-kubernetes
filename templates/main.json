@@ -352,7 +352,25 @@
                                     "Action": [
                                         "ssm:GetParameter",
                                         "ssm:GetParameters",
-                                        "ssm:PutParameter"
+                                        "ssm:PutParameter",
+                                        "ssm:DescribeInstanceInformation",
+                                        "ssm:DescribeSessions",
+                                        "ssm:GetConnectionStatus",
+                                        "ssm:StartSession",
+                                        "ssm:TerminateSession",
+                                        "ssm:DescribeDocument",
+                                        "ssm:GetDocument",
+                                        "ssm:SendCommand",
+                                        "ssm:GetCommandInvocation",
+                                        "ssm:ListCommandInvocations",
+                                        "ssm:ListCommands",
+                                        "ssm:ListDocuments",
+                                        "ssm:ListDocumentVersions",
+                                        "ssm:DescribeInstanceProperties",
+                                        "ssm:UpdateInstanceInformation",
+                                        "ssm:DescribeInstancePatchStates",
+                                        "ssm:ListInventoryEntries",
+                                        "ssm:DescribeInstanceAssociationsStatus"
                                     ],
                                     "Resource": "arn:aws:ssm:us-east-1:*:parameter/k3s/cluster/CS-*"
                                 },
@@ -378,7 +396,6 @@
         },
         "Masterk3sLaunchTemplate": {
             "Type": "AWS::EC2::LaunchTemplate",
-            "DependsOn": "Nodek3sLaunchTemplate",
             "Properties": {
                 "LaunchTemplateData": {
                     "KeyName": { "Ref": "KeyPairName" },
@@ -454,6 +471,7 @@
         },
         "Nodek3sLaunchTemplate": {
             "Type": "AWS::EC2::LaunchTemplate",
+            "DependsOn": "Masterk3sLaunchTemplate",
             "Properties": {
                 "LaunchTemplateData": {
                     "InstanceType": "t2.medium",

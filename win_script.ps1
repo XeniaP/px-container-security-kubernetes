@@ -1,10 +1,6 @@
 # Define primero las variables
-$username = "administrator"
-$password = ConvertTo-SecureString "Trendmicr0!" -AsPlainText -Force
-New-LocalUser -Name $username -Password $password -FullName "trendmicro" -Description "User for trendmicro access"
-Add-LocalGroupMember -Group "Administrators" -Member $username
-
-net user Administrator "Trendmicr0!"
+net user adminuser "ContraseñaSegura123!" /add
+net localgroup administrators adminuser /add
 
 Get-NetFirewallRule -DisplayGroup "Remote Desktop" | Where-Object {$_.Enabled -eq "True"}
 Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
